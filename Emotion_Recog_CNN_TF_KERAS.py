@@ -3,7 +3,7 @@ import tensorflow as tf
 import keras
 from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
+from keras.models import Sequential,model_from_json
 from keras.layers import Conv2D, MaxPooling2D, AveragePooling2D
 from keras.layers import Dense, Activation, Dropout, Flatten
 import numpy as np
@@ -16,7 +16,7 @@ keras.backend.set_session(sess)
 
 num_classes = 7  # angry, disgust, fear, happy, sad, surprise, neutral
 batch_size = 256
-epochs = 4
+epochs = 8
 
 
 with open("/Users/sohebmoin/Downloads/fer2013/fer2013.csv") as f:
@@ -96,17 +96,38 @@ model.add(Dense(num_classes, activation='softmax'))
 gen = ImageDataGenerator()
 train_generator = gen.flow(x_train, y_train, batch_size=batch_size)
 
-model.compile(loss='categorical_crossentropy'
+# model.compile(loss='categorical_crossentropy'
+#               , optimizer=keras.optimizers.Adam()
+#               , metrics=['accuracy']
+#               )
+#
+# fit = True
+#
+# if fit == True:
+#     model.fit_generator(train_generator, steps_per_epoch=batch_size, epochs=epochs)  # train for randomly selected one
+# else:
+#     model.load_weights('/data/facial_expression_model_weights.h5')  # load weights
+#
+# model_json = model.to_json()
+# with open("model2.json", "w") as json_file:
+#     json_file.write(model_json)
+# # serialize weights to HDF5
+# model.save_weights("model2.h5")
+# print("Saved model to disk")
+
+
+json_file = open('model2.json', 'r')
+loaded_model_json = json_file.read()
+json_file.close()
+loaded_model = model_from_json(loaded_model_json)
+# load weights into new model
+loaded_model.load_weights("model2.h5")
+print("Loaded model from disk")
+
+loaded_model.compile(loss='categorical_crossentropy'
               , optimizer=keras.optimizers.Adam()
               , metrics=['accuracy']
               )
-
-fit = True
-
-if fit == True:
-    model.fit_generator(train_generator, steps_per_epoch=batch_size, epochs=epochs)  # train for randomly selected one
-else:
-    model.load_weights('/data/facial_expression_model_weights.h5')  # load weights
 
 def emotion_analysis(emotions):
     objects = ('angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral')
@@ -142,14 +163,14 @@ if monitor_testset_results == True:
             print("----------------------------------------------")
         index = index + 1
 
-img = image.load_img("/Users/sohebmoin/Downloads/jackman.png", grayscale=True, target_size=(48, 48))
+img = image.load_img("/Users/sohebmoin/Downloads/jackman.jpg", grayscale=True, target_size=(48, 48))
 
 x = image.img_to_array(img)
 x = np.expand_dims(x, axis=0)
 
 x /= 255
 
-custom = model.predict(x)
+custom = loaded_model.predict(x)
 emotion_analysis(custom[0])
 
 x = np.array(x, 'float32')
